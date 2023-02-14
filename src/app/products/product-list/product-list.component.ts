@@ -17,14 +17,26 @@ export class ProductListComponent implements OnInit {
 
   title: string = 'Products';
   selectedProduct: Product;
-  products$: Observable<Product[]>;
   errorMessage;
 
+  // Observables
+  products$: Observable<Product[]>;
+  productsNumber$: Observable<number>;
+  mostExpensiveProduct$: Observable<Product>;
+
   // Pagination
-  pageSize = 5;
+  productsToLoad = this.productService.productsToLoad;
+  pageSize = this.productsToLoad / 2;
   start = 0;
   end = this.pageSize;
   currentPage = 1;
+
+  loadMore(): void {
+    let skip = this.end;
+    let take = this.productsToLoad;
+
+    this.productService.initProducts(skip, take);
+  }
 
   previousPage() {
     this.start -= this.pageSize;
@@ -60,12 +72,28 @@ export class ProductListComponent implements OnInit {
     this.router.routeReuseStrategy.shouldReuseRoute = () => false;
 
     this.products$ = this
-                      .productService
-                      .products$;
+                        .productService
+                        .products$;
+
+    this.productsNumber$ = this
+                              .products$
+                              .pipe(
+                                map(products => products.length),
+                                startWith(0)
+                              );
+
+    this.mostExpensiveProduct$ = this
+                                    .productService
+                                    .mostExpensiveProduct$;
   }
 
   refresh() {
-    this.productService.initProducts();
-    this.router.navigateByUrl('/products'); // Self route navigation
-  }  
+    // Reset de la liste
+    this.productService.resetList();
+
+    // Reset de la pagination
+    this.start = 0;
+    this.end = this.pageSize;
+    this.currentPage = 1;
+  }
 }
